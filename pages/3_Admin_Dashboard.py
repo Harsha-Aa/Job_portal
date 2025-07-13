@@ -3,13 +3,34 @@ import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
-from utils.data_store import DataStore
+from utils.db_data_store import DatabaseDataStore
+from utils.auth import AuthManager, show_login_form
+from database.database import init_database
 
-# Initialize data store
+# Initialize database
+init_database()
+
+# Initialize data store and auth
 if 'data_store' not in st.session_state:
-    st.session_state.data_store = DataStore()
+    st.session_state.data_store = DatabaseDataStore()
+
+auth = AuthManager()
 
 st.set_page_config(page_title="Admin Dashboard - AI Job Portal", page_icon="⚙️", layout="wide")
+
+# Check authentication and admin role
+if not auth.is_authenticated():
+    st.error("Please login to access the admin dashboard.")
+    if st.button("Login / Register"):
+        st.switch_page("pages/login.py")
+    st.stop()
+
+if not auth.is_admin():
+    st.error("Access denied. This page is for administrators only.")
+    st.stop()
+
+# Show login form in sidebar
+show_login_form()
 
 st.title("⚙️ Admin Dashboard")
 st.markdown("Comprehensive overview of job portal analytics and management")
@@ -18,14 +39,6 @@ st.markdown("Comprehensive overview of job portal analytics and management")
 data_store = st.session_state.data_store
 jobs = data_store.get_all_jobs()
 applications = data_store.get_all_applications()
-
-# Sidebar for admin authentication (simple password check)
-st.sidebar.header("Admin Access")
-admin_password = st.sidebar.text_input("Enter Admin Password", type="password")
-
-if admin_password != "admin123":
-    st.warning("⚠️ Please enter the admin password to access this dashboard")
-    st.stop()
 
 # Main dashboard content
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Analytics", "💼 Jobs Management", "📄 Applications", "⚙️ Settings"])

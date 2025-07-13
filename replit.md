@@ -30,10 +30,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Key Components
 
+### User Authentication System
+- **AuthManager Class**: Handles user login, logout, and session management
+- **Role-based Access Control**: Three user roles (admin, employer, seeker)
+- **Password Security**: Bcrypt hashing for secure password storage
+- **Session Management**: Streamlit session state for user persistence
+
 ### Data Management
-- **DataStore Class**: Handles all data operations using Streamlit session state
-- **In-Memory Storage**: Jobs, applications, and user data stored temporarily
-- **CRUD Operations**: Full create, read, update, delete functionality for jobs and applications
+- **Database Backend**: SQLite database with SQLAlchemy ORM for persistent storage
+- **User Authentication**: Role-based access control (admin, employer, seeker)
+- **DatabaseDataStore Class**: Handles all data operations with database persistence
+- **CRUD Operations**: Full create, read, update, delete functionality for jobs, applications, and users
 
 ### Resume Processing
 - **ResumeParser Class**: Extracts text from PDF and DOCX files
@@ -112,10 +119,10 @@ Preferred communication style: Simple, everyday language.
 ## Technical Decisions
 
 ### Storage Solution
-- **Problem**: Need for data persistence in development environment
-- **Solution**: Streamlit session state for temporary storage
-- **Rationale**: Rapid prototyping without database setup complexity
-- **Future**: Easily replaceable with persistent database (PostgreSQL, MongoDB)
+- **Problem**: Need for data persistence across sessions and users
+- **Solution**: SQLite database with SQLAlchemy ORM
+- **Rationale**: Persistent storage with minimal setup, supports concurrent users
+- **Implementation**: Database models for User, Job, and Application entities with relationships
 
 ### Job Matching Algorithm
 - **Problem**: Intelligent matching between resumes and job descriptions

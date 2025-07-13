@@ -1,13 +1,34 @@
 import streamlit as st
 from datetime import datetime
 import uuid
-from utils.data_store import DataStore
+from utils.db_data_store import DatabaseDataStore
+from utils.auth import AuthManager, show_login_form
+from database.database import init_database
 
-# Initialize data store
+# Initialize database
+init_database()
+
+# Initialize data store and auth
 if 'data_store' not in st.session_state:
-    st.session_state.data_store = DataStore()
+    st.session_state.data_store = DatabaseDataStore()
+
+auth = AuthManager()
 
 st.set_page_config(page_title="Job Postings - AI Job Portal", page_icon="📝", layout="wide")
+
+# Check authentication and role
+if not auth.is_authenticated():
+    st.error("Please login to access job posting features.")
+    if st.button("Login / Register"):
+        st.switch_page("pages/login.py")
+    st.stop()
+
+if not auth.is_employer() and not auth.is_admin():
+    st.error("Only employers and admins can post jobs.")
+    st.stop()
+
+# Show login form in sidebar
+show_login_form()
 
 st.title("📝 Job Postings")
 st.markdown("Post new job opportunities and manage existing listings")
@@ -73,8 +94,12 @@ with tab1:
                     'status': 'active'
                 }
                 
-                # Save to data store
-                st.session_state.data_store.add_job(job_data)
+                # Save to data store with employer ID
+                current_user = auth.get_current_user()
+                employer_id = current_user['id']
+                
+                job_data['contact_email'] = contact_email
+                st.session_state.data_store.add_job(job_data, employer_id)
                 st.success("✅ Job posted successfully!")
                 st.balloons()
                 
@@ -91,7 +116,12 @@ with tab1:
 with tab2:
     st.header("Manage Job Postings")
     
-    jobs = st.session_state.data_store.get_all_jobs()
+    # Get jobs for current user (employers see their own jobs, admins see all)
+    current_user = auth.get_current_user()
+    if auth.is_admin():
+        jobs = st.session_state.data_store.get_all_jobs()
+    else:
+        jobs = st.session_state.data_store.get_jobs_by_employer(current_user['id'])
     
     if jobs:
         # Filter options

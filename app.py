@@ -1,11 +1,18 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from utils.data_store import DataStore
+from utils.db_data_store import DatabaseDataStore
+from utils.auth import AuthManager, show_login_form
+from database.database import init_database
 
-# Initialize data store
+# Initialize database
+init_database()
+
+# Initialize data store and auth
 if 'data_store' not in st.session_state:
-    st.session_state.data_store = DataStore()
+    st.session_state.data_store = DatabaseDataStore()
+
+auth = AuthManager()
 
 # Page configuration
 st.set_page_config(
@@ -55,8 +62,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar navigation
+# Sidebar navigation and authentication
 st.sidebar.title("Navigation")
+show_login_form()
 st.sidebar.markdown("---")
 
 # Display statistics
@@ -133,6 +141,13 @@ with col2:
 with col3:
     if st.button("⚙️ Admin Dashboard", use_container_width=True):
         st.switch_page("pages/3_Admin_Dashboard.py")
+
+# Login prompt for non-authenticated users
+if not auth.is_authenticated():
+    st.markdown("---")
+    st.info("🔐 Please login to access job posting and application features.")
+    if st.button("Login / Register", use_container_width=True):
+        st.switch_page("pages/login.py")
 
 # Footer
 st.markdown("---")

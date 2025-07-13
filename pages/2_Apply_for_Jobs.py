@@ -2,13 +2,18 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import uuid
-from utils.data_store import DataStore
+from utils.db_data_store import DatabaseDataStore
 from utils.resume_parser import ResumeParser
 from utils.job_matcher import JobMatcher
+from utils.auth import AuthManager, show_login_form
+from database.database import init_database
+
+# Initialize database
+init_database()
 
 # Initialize components
 if 'data_store' not in st.session_state:
-    st.session_state.data_store = DataStore()
+    st.session_state.data_store = DatabaseDataStore()
 
 if 'resume_parser' not in st.session_state:
     st.session_state.resume_parser = ResumeParser()
@@ -16,7 +21,12 @@ if 'resume_parser' not in st.session_state:
 if 'job_matcher' not in st.session_state:
     st.session_state.job_matcher = JobMatcher()
 
+auth = AuthManager()
+
 st.set_page_config(page_title="Apply for Jobs - AI Job Portal", page_icon="🔍", layout="wide")
+
+# Show login form in sidebar
+show_login_form()
 
 st.title("🔍 Browse & Apply for Jobs")
 st.markdown("Find your perfect job match with AI-powered resume analysis")
@@ -123,7 +133,13 @@ with tab1:
                         submitted = st.form_submit_button("🚀 Apply Now", use_container_width=True)
                         
                         if submitted:
-                            if applicant_name and applicant_email and resume_file:
+                            if not auth.is_authenticated():
+                                st.error("Please login to apply for jobs.")
+                                if st.button("Login / Register"):
+                                    st.switch_page("pages/login.py")
+                            elif not auth.is_seeker():
+                                st.error("Only job seekers can apply for jobs.")
+                            elif applicant_name and applicant_email and resume_file:
                                 # Parse resume
                                 resume_text = st.session_state.resume_parser.parse_resume(resume_file)
                                 
@@ -135,18 +151,13 @@ with tab1:
                                     )
                                     
                                     # Create application
+                                    current_user = auth.get_current_user()
                                     application_data = {
-                                        'id': str(uuid.uuid4()),
                                         'job_id': job.get('id'),
-                                        'job_title': job.get('title'),
-                                        'company': job.get('company'),
-                                        'applicant_name': applicant_name,
-                                        'applicant_email': applicant_email,
-                                        'applicant_phone': applicant_phone,
+                                        'applicant_id': current_user['id'],
                                         'resume_text': resume_text,
                                         'cover_letter': cover_letter,
                                         'match_score': match_score,
-                                        'application_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                         'status': 'submitted'
                                     }
                                     
@@ -260,11 +271,14 @@ with tab2:
 with tab3:
     st.header("My Applications")
     
-    # Filter applications by email
-    applicant_email = st.text_input("Enter your email to view applications", placeholder="your.email@example.com")
-    
-    if applicant_email:
-        applications = st.session_state.data_store.get_applications_by_email(applicant_email)
+    # Show applications for logged-in users
+    if not auth.is_authenticated():
+        st.info("Please login to view your applications.")
+        if st.button("Login / Register"):
+            st.switch_page("pages/login.py")
+    else:
+        current_user = auth.get_current_user()
+        applications = st.session_state.data_store.get_applications_by_user(current_user['id'])
         
         if applications:
             st.success(f"Found {len(applications)} applications")
@@ -297,7 +311,7 @@ with tab3:
                         elif status == 'rejected':
                             st.error("❌ Rejected")
         else:
-            st.info("No applications found for this email address.")
+            st.info("No applications found.")
 
 # Navigation
 st.markdown("---")
