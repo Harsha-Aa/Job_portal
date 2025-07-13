@@ -163,8 +163,15 @@ with tab2:
         # Convert to DataFrame for better display
         jobs_data = []
         for job in jobs:
+            job_id = job.get('id', '')
+            # Handle both string and integer IDs
+            if isinstance(job_id, int):
+                display_id = str(job_id)
+            else:
+                display_id = str(job_id)[:8] + '...' if len(str(job_id)) > 8 else str(job_id)
+
             jobs_data.append({
-                'ID': job.get('id', '')[:8] + '...',
+                'ID': display_id,
                 'Title': job.get('title', 'N/A'),
                 'Company': job.get('company', 'N/A'),
                 'Location': job.get('location', 'N/A'),
