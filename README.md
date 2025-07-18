@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive job portal application built with Streamlit that connects job seekers with employers using AI-powered resume analysis and job matching. The system features job posting capabilities, resume parsing, intelligent job matching, and administrative dashboards.
+This is a comprehensive job portal application built with Streamlit that connects job seekers with employers using resume analysis and job matching. The system features job posting capabilities, resume parsing, intelligent job matching, and administrative dashboards.
 
 ## User Preferences
 
